@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: system-ui, "Microsoft Yahei", sans-serif;
+        }
+
+        body {
+            background-color: #f4f6f9;
+            padding: 40px 20px;
+        }
+
+        .wrapper {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 14px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+            overflow: hidden;
+        }
+
+        .page-title {
+            padding: 24px 28px;
+            background: #1d4ed8;
+            color: #fff;
+            font-size: 22px;
+            font-weight: 500;
+        }
+
+        .tree-container {
+            padding: 24px 28px;
+        }
+
+        .loading-tip {
+            color: #999;
+            text-align: center;
+            padding: 40px 0;
+        }
+
+        /* 树形基础样式 */
+        .tree-node {
+            user-select: none;
+        }
+
+        .tree-child-group {
+            padding-left: 26px;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+
+        .tree-child-group.fold {
+            max-height: 0 !important;
+        }
+
+        .tree-row {
+            display: flex;
+            align-items: center;
+            padding: 9px 10px;
+            border-radius: 8px;
+            margin: 3px 0;
+            gap: 10px;
+        }
+
+        .tree-row:hover {
+            background-color: #eff6ff;
+        }
+
+        .tree-row.active {
+            background-color: #dbeafe;
+        }
+
+        .fold-icon {
+            width: 22px;
+            height: 22px;
+            display: grid;
+            place-items: center;
+            border-radius: 5px;
+            color: #555;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .fold-icon:hover {
+            background: #e2e8f0;
+        }
+
+        .nav-link {
+            flex: 1;
+            font-size: 15px;
+            color: #111827;
+            text-decoration: none;
+        }
+
+        .nav-link:hover {
+            color: #2563eb;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="wrapper">
+        <div class="page-title">📂 导航目录</div>
+        <div class="tree-container" id="treeBox">
+            <div class="loading-tip">加载目录数据中...</div>
+        </div>
+    </div>
+
+    <script>
+        let treeData = [];
+        let activeId = null;
+        const treeBox = document.getElementById("treeBox");
+
+        // 加载外部JSON文件
+        async function loadNavJson() {
+            try {
+                // 此处路径为nav.json，HTML与json文件放在同一文件夹
+                const res = await fetch("./nav.json");
+                if (!res.ok) throw new Error("JSON文件读取失败");
+                treeData = await res.json();
+                renderTree();
+            } catch (err) {
+                treeBox.innerHTML = `<div style="color:red;text-align:center;padding:40px;">数据加载失败：${err.message}<br>请确认nav.json与html文件同级存放</div>`;
+                console.error(err);
+            }
+        }
+
+        // 渲染整棵树
+        function renderTree() {
+            let html = "";
+            treeData.forEach(item => html += renderItem(item));
+            treeBox.innerHTML = html;
+            bindEvent();
+        }
+
+        // 递归渲染单个节点
+        function renderItem(node) {
+            const hasChild = node.children.length > 0;
+            const icon = node.fold ? "▶" : "▼";
+            const activeClass = activeId === node.id ? "active" : "";
+
+            let childHtml = "";
+            if (hasChild) {
+                node.children.forEach(child => childHtml += renderItem(child));
+            }
+
+            return `
+                <div class="tree-node" data-id="${node.id}">
+                    <div class="tree-row ${activeClass}" data-id="${node.id}">
+                        <span class="fold-icon" data-id="${node.id}">${hasChild ? icon : ""}</span>
+                        <a class="nav-link" href="${node.url}" target="_blank">${node.name}</a>
+                    </div>
+                    ${hasChild ? `<div class="tree-child-group ${node.fold ? 'fold' : ''}">${childHtml}</div>` : ""}
+                </div>
+            `;
+        }
+
+        // 绑定折叠、选中事件
+        function bindEvent() {
+            // 折叠展开箭头
+            document.querySelectorAll(".fold-icon").forEach(icon => {
+                icon.addEventListener("click", e => {
+                    e.stopPropagation();
+                    const id = Number(e.target.dataset.id);
+                    toggleFold(treeData, id);
+                    renderTree();
+                });
+            });
+
+            // 点击行高亮选中
+            document.querySelectorAll(".tree-row").forEach(row => {
+                row.addEventListener("click", e => {
+                    if (e.target.tagName === "A") return;
+                    activeId = Number(row.dataset.id);
+                    renderTree();
+                });
+            });
+        }
+
+        // 递归切换折叠状态
+        function toggleFold(list, targetId) {
+            for (const item of list) {
+                if (item.id === targetId) {
+                    item.fold = !item.fold;
+                    return true;
+                }
+                if (item.children && toggleFold(item.children, targetId)) return true;
+            }
+            return false;
+        }
+
+        // 页面启动加载JSON
+        loadNavJson();
+    </script>
+</body>
+
+</html>
