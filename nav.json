@@ -12,9 +12,16 @@
         "fold": false,
         "children": [
           {
-            "id": 1021,
+            "id": 1011,
             "name": "Text Scramble Effect using Javascript",
             "url": "/taginn-demo/2026/06/Text Scramble Effect using Javascript",
+            "fold": false,
+            "children": []
+          },
+          {
+            "id": 1012,
+            "name": "Modern Javascript Button Hover Animation Effects",
+            "url": "/taginn-demo/2026/06/Modern Javascript Button Hover Animation Effects",
             "fold": false,
             "children": []
           }
